@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    match /test/connection {
+      allow read: if isSignedIn();
+    }
+
+    // Profiles
+    match /profiles/{profileId} {
+      function isValidProfile(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+               data.ownerId == request.auth.uid &&
+               (!('googleLocationId' in data) || data.googleLocationId is string);
+      }
+
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isEmailVerified() && isValidProfile(request.resource.data);
+      allow update: if isEmailVerified() && isValidProfile(request.resource.data) &&
+                     request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isEmailVerified() && resource.data.ownerId == request.auth.uid;
+
+      // Reviews Subcollection
+      match /reviews/{reviewId} {
+        function isValidReview(data) {
+          return data.profileId == profileId &&
+                 data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+                 data.comment is string;
+        }
+
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(reviewId) && isValidReview(request.resource.data);
+        allow update: if isEmailVerified() && 
+                       get(/databases/$(database)/documents/profiles/$(profileId)).data.ownerId == request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['response', 'respondedAt']);
+        allow delete: if isEmailVerified() && 
+                       get(/databases/$(database)/documents/profiles/$(profileId)).data.ownerId == request.auth.uid;
+      }
+
+      // Analytics Subcollection
+      match /analytics/{analyticsId} {
+        allow read: if isSignedIn() && 
+                     get(/databases/$(database)/documents/profiles/$(profileId)).data.ownerId == request.auth.uid;
+        allow write: if false; // System only (simulated for this app)
+      }
+    }
+
+    // Posts Collection
+    match /posts/{postId} {
+      function isValidPost(data) {
+        return data.profileId is string &&
+               data.content is string && data.content.size() <= 1500 &&
+               data.status in ['draft', 'scheduled', 'published'] &&
+               data.ownerId == request.auth.uid;
+      }
+
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isEmailVerified() && isValidPost(request.resource.data);
+      allow update: if isEmailVerified() && isValidPost(request.resource.data) &&
+                     resource.data.ownerId == request.auth.uid;
+      allow delete: if isEmailVerified() && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}

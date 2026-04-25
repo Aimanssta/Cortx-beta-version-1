@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "profiles": {
+      "title": "Business Profile",
+      "description": "Stores information about a Google Business Profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "website": { "type": "string" },
+        "category": { "type": "string" },
+        "hours": { "type": "string" },
+        "description": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "reviews": {
+      "title": "Review",
+      "description": "Customer reviews for a business profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "profileId": { "type": "string" },
+        "reviewerName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "response": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "respondedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["profileId", "rating", "comment"]
+    },
+    "analytics": {
+      "title": "Performance Analytics",
+      "description": "Daily tracking of profile performance metrics.",
+      "type": "object",
+      "properties": {
+        "profileId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "views": { "type": "number" },
+        "searches": { "type": "number" },
+        "actions": { "type": "number" }
+      },
+      "required": ["profileId", "date"]
+    },
+    "posts": {
+      "title": "GBP Post",
+      "description": "Scheduled or published posts for Google Business Profiles.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "profileId": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "scheduledTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["draft", "scheduled", "published"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["profileId", "content", "scheduledTime", "status", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/profiles/{profileId}": {
+      "schema": "profiles",
+      "description": "Primary business profiles."
+    },
+    "/profiles/{profileId}/reviews/{reviewId}": {
+      "schema": "reviews",
+      "description": "Reviews for a specific profile."
+    },
+    "/profiles/{profileId}/analytics/{analyticsId}": {
+      "schema": "analytics",
+      "description": "Performance metrics per profile."
+    },
+    "/posts/{postId}": {
+      "schema": "posts",
+      "description": "Global posts collection for cross-profile management."
+    }
+  }
+}
