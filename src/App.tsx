@@ -107,12 +107,14 @@ export default function App() {
       }
     } catch (error: any) {
       console.error("Login failed:", error);
-      if (error?.code === 'auth/popup-blocked') {
+      const errorCode = error?.code || error?.message || "";
+      
+      if (errorCode.includes('auth/popup-blocked')) {
         alert("Login popup was blocked by your browser. Please allow popups for this site and try again.");
-      } else if (error?.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, no need to alert
-      } else if (error?.code === 'auth/unauthorized-domain') {
-        alert("Domain not authorized. Please add your Vercel URL to the 'Authorized domains' list in your Firebase Authentication settings.");
+      } else if (errorCode.includes('auth/popup-closed-by-user') || errorCode.includes('auth/cancelled-popup-request')) {
+        // User closed the popup or cancelled, no need to alert
+      } else if (errorCode.includes('auth/unauthorized-domain')) {
+        alert("Domain not authorized. Please add your current domain (e.g., cortxai.us) to the 'Authorized domains' list in your Firebase Authentication settings.");
       } else {
         alert("Login failed: " + (error?.message || "Unknown error"));
       }
@@ -744,19 +746,20 @@ export default function App() {
 
 function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, isLoading: boolean, onNavigate: (mode: 'privacy' | 'terms') => void }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Abstract Background Elements */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden text-center">
+      {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-900 bg-grid-mask z-0" />
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full z-0" />
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full z-0" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 blur-[120px] rounded-full z-0" />
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl text-center z-10"
+        transition={{ duration: 0.6 }}
+        className="max-w-4xl z-10"
       >
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full mb-8">
-          <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+          <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
           <span className="text-xs font-medium text-slate-300">Beta Version 1.0</span>
         </div>
         
@@ -766,15 +769,17 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
         </h1>
         
         <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Optimize your Google Business Profile, automate review responses with Gemini AI, 
-          and gain deeper insights into your local presence.
+          CORTX GBP helps you manage your Google Business Profile with Gemini AI. 
+          Respond to reviews, track analytics, and optimize your local presence efficiently.
+          <br /><br />
+          <span className="text-sm opacity-60">We use your Google data solely for dashboard analytics and AI-powered review responses. Your data is encrypted and never shared.</span>
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
             onClick={onLogin}
             disabled={isLoading}
-            className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-hover text-white rounded-lg font-semibold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-70"
+            className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-3 disabled:opacity-70"
           >
             {isLoading ? (
               <RefreshCw className="w-5 h-5 animate-spin" />
@@ -783,26 +788,23 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
             )}
             {isLoading ? 'Connecting...' : 'Get Started with Google'}
           </button>
-          <a href="#features" className="w-full sm:w-auto px-8 py-4 glass-card rounded-2xl font-semibold hover:border-slate-700 transition-all">
-            View Features
-          </a>
         </div>
 
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
           <FeatureCard 
             title="AI Reviews" 
-            desc="Generate professional responses with Gemini 2.0 Flash." 
-            icon={<Sparkles className="text-primary" />}
+            desc="Generate professional responses with Gemini 1.5 Flash." 
+            icon={<Sparkles className="text-indigo-400" />}
           />
           <FeatureCard 
             title="Deep Analytics" 
             desc="Track views, searches, and actions across all profiles." 
-            icon={<BarChart3 className="text-primary" />}
+            icon={<BarChart3 className="text-indigo-400" />}
           />
           <FeatureCard 
             title="Multi-Profile" 
-            desc="Manage all your business locations from a single node." 
-            icon={<Store className="text-primary" />}
+            desc="Manage all your business locations from a single dashboard." 
+            icon={<Store className="text-indigo-400" />}
           />
         </div>
       </motion.div>
