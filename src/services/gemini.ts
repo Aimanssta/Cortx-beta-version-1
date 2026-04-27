@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
-const SYSTEM_PROMPT = `You are a world-class Google Business Profile (GBP) and local SEO expert at Cort X AI. 
+const SYSTEM_PROMPT = `You are a world-class Google Business Profile (GBP) and local SEO expert at CORTX GBP. 
 Your goal is to help businesses dominate their local market through intelligent automation and strategic insights.
 Always maintain a professional, helpful, and data-driven tone.`;
 

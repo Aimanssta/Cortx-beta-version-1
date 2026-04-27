@@ -55,11 +55,11 @@ export function TermsOfServiceContent() {
     <div className="space-y-6">
       <section>
         <h2 className="text-2xl font-semibold">1. Acceptance of Terms</h2>
-        <p>By accessing and using Cort X AI, you accept and agree to be bound by the terms and provision of this agreement.</p>
+        <p>By accessing and using CORTX GBP, you accept and agree to be bound by the terms and provision of this agreement.</p>
       </section>
       <section>
         <h2 className="text-2xl font-semibold">2. Description of Service</h2>
-        <p>Cort X AI provides users with AI-powered tools for Google Business Profile management, including review responses and marketing strategy generation.</p>
+        <p>CORTX GBP provides users with AI-powered tools for Google Business Profile management, including review responses and marketing strategy generation.</p>
       </section>
       <section>
         <h2 className="text-2xl font-semibold">3. User Conduct</h2>
@@ -67,7 +67,7 @@ export function TermsOfServiceContent() {
       </section>
       <section>
         <h2 className="text-2xl font-semibold">4. Limitation of Liability</h2>
-        <p>Cort X AI shall not be liable for any indirect, incidental, special, consequential or punitive damages, or any loss of profits or revenues.</p>
+        <p>CORTX GBP shall not be liable for any indirect, incidental, special, consequential or punitive damages, or any loss of profits or revenues.</p>
       </section>
     </div>
   );

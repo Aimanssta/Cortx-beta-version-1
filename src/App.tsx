@@ -87,6 +87,13 @@ export default function App() {
   const [posts, setPosts] = useState<GBPPost[]>([]);
   const [viewMode, setViewMode] = useState<'main' | 'privacy' | 'terms'>('main');
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (page === 'privacy') setViewMode('privacy');
+    else if (page === 'terms') setViewMode('terms');
+  }, []);
+
   const [loginLoading, setLoginLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -255,7 +262,7 @@ export default function App() {
           <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <span className="font-extrabold text-white text-xl">C</span>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Cort X AI</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">CORTX GBP</h1>
         </div>
 
         <div className="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
@@ -753,9 +760,9 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
           <span className="text-xs font-medium text-slate-300">Beta Version 1.0</span>
         </div>
         
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tight">
-          Manage Your Business With <br />
-          <span className="gradient-text">AI Precision</span>
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tight text-white leading-tight">
+          CORTX <br />
+          <span className="gradient-text">GBP AI</span>
         </h1>
         
         <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
@@ -803,7 +810,7 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
       {/* Footer with Legal Links */}
       <footer className="absolute bottom-8 left-0 w-full z-10 px-8 text-center sm:text-left">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-600">
-          <p>© 2024 Cort X AI. All rights reserved.</p>
+          <p>© 2024 CORTX GBP. All rights reserved.</p>
           <div className="flex gap-6">
             <button 
               onClick={() => onNavigate('privacy')}
