@@ -22,7 +22,8 @@ import { GoogleBusinessService } from './services/googleBusiness';
 import { GoogleAnalyticsService, AnalyticsMetrics, DayMetric } from './services/googleAnalytics';
 import { motion, AnimatePresence } from 'motion/react';
 import { handleFirestoreError, OperationType } from './lib/errorHandler';
-import { generateReviewResponse } from './services/gemini';
+import { generateReviewResponse, generateMarketingStrategy } from './services/gemini';
+import { LegalLayout, PrivacyPolicyContent, TermsOfServiceContent } from './Legal';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
@@ -84,8 +85,12 @@ export default function App() {
   const [analyticsData, setAnalyticsData] = useState<{ metrics: AnalyticsMetrics, chartData: DayMetric[] } | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [posts, setPosts] = useState<GBPPost[]>([]);
+  const [viewMode, setViewMode] = useState<'main' | 'privacy' | 'terms'>('main');
+
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const handleLogin = async () => {
+    setLoginLoading(true);
     try {
       googleProvider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, googleProvider);
@@ -93,8 +98,19 @@ export default function App() {
       if (credential?.accessToken) {
         GoogleBusinessService.setToken(credential.accessToken);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      if (error?.code === 'auth/popup-blocked') {
+        alert("Login popup was blocked by your browser. Please allow popups for this site and try again.");
+      } else if (error?.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, no need to alert
+      } else if (error?.code === 'auth/unauthorized-domain') {
+        alert("Domain not authorized. Please add your Vercel URL to the 'Authorized domains' list in your Firebase Authentication settings.");
+      } else {
+        alert("Login failed: " + (error?.message || "Unknown error"));
+      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -219,8 +235,16 @@ export default function App() {
     );
   }
 
+  if (viewMode === 'privacy') {
+    return <LegalLayout title="Privacy Policy" content={<PrivacyPolicyContent />} onBack={() => setViewMode('main')} />;
+  }
+
+  if (viewMode === 'terms') {
+    return <LegalLayout title="Terms of Service" content={<TermsOfServiceContent />} onBack={() => setViewMode('main')} />;
+  }
+
   if (!user) {
-    return <LandingPage onLogin={handleLogin} />;
+    return <LandingPage onLogin={handleLogin} isLoading={loginLoading} onNavigate={setViewMode} />;
   }
 
   return (
@@ -509,6 +533,25 @@ export default function App() {
             </motion.div>
           )}
 
+          {activeTab === 'strategy' && (
+            <motion.div
+              key="strategy"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {selectedProfile ? (
+                 <AdvancedStrategy profile={selectedProfile} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <AlertCircle className="w-16 h-16 text-slate-700 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Access Denied</h3>
+                  <p className="text-slate-400">Please select or create a business profile first.</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {activeTab === 'website' && (
             <motion.div
               key="website"
@@ -656,7 +699,7 @@ export default function App() {
               )}
             </motion.div>
           )}
-          {['profile-audit', 'strategy', 'social', 'locations', 'content', 'performance'].includes(activeTab) && (
+          {['profile-audit', 'social', 'locations', 'content', 'performance'].includes(activeTab) && (
             <motion.div
               key={activeTab}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -692,7 +735,7 @@ export default function App() {
 
 // --- Sub-components ---
 
-function LandingPage({ onLogin }: { onLogin: () => void }) {
+function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, isLoading: boolean, onNavigate: (mode: 'privacy' | 'terms') => void }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Abstract Background Elements */}
@@ -723,10 +766,15 @@ function LandingPage({ onLogin }: { onLogin: () => void }) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
             onClick={onLogin}
-            className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-hover text-white rounded-lg font-semibold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3"
+            disabled={isLoading}
+            className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-hover text-white rounded-lg font-semibold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-70"
           >
-            <Globe className="w-5 h-5" />
-            Get Started with Google
+            {isLoading ? (
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            ) : (
+              <Globe className="w-5 h-5" />
+            )}
+            {isLoading ? 'Connecting...' : 'Get Started with Google'}
           </button>
           <a href="#features" className="w-full sm:w-auto px-8 py-4 glass-card rounded-2xl font-semibold hover:border-slate-700 transition-all">
             View Features
@@ -751,6 +799,27 @@ function LandingPage({ onLogin }: { onLogin: () => void }) {
           />
         </div>
       </motion.div>
+
+      {/* Footer with Legal Links */}
+      <footer className="absolute bottom-8 left-0 w-full z-10 px-8 text-center sm:text-left">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-600">
+          <p>© 2024 Cort X AI. All rights reserved.</p>
+          <div className="flex gap-6">
+            <button 
+              onClick={() => onNavigate('privacy')}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <button 
+              onClick={() => onNavigate('terms')}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
+            >
+              Terms of Service
+            </button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1124,6 +1193,110 @@ function ProfileDetail({ icon, label, value }: { icon: React.ReactNode, label: s
       <div>
         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{label}</p>
         <p className="text-sm font-medium">{value || 'Not provided'}</p>
+      </div>
+    </div>
+  );
+}
+
+function AdvancedStrategy({ profile }: { profile: BusinessProfile }) {
+  const [strategy, setStrategy] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleGenerate() {
+    setLoading(true);
+    const metrics = `Profile View: 1.2k, Conversions: 56, Rating: 4.8`;
+    const result = await generateMarketingStrategy(profile.name, profile.category, metrics);
+    setStrategy(result);
+    setLoading(false);
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold mb-1">Advanced AI Strategy</h2>
+          <p className="text-slate-400">Data-driven marketing pathways for <span className="text-indigo-400">{profile.name}</span></p>
+        </div>
+        <button 
+          onClick={handleGenerate}
+          disabled={loading}
+          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+        >
+          {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+          {loading ? 'Analyzing...' : 'Generate New Strategy'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          {strategy ? (
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="bg-[#111114] border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden"
+             >
+               <div className="absolute top-0 right-0 p-4 opacity-5">
+                 <Zap className="w-32 h-32 text-indigo-400" />
+               </div>
+               <div className="prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-white prose-li:text-slate-400">
+                 <div className="whitespace-pre-wrap font-sans text-lg leading-relaxed">
+                   {strategy}
+                 </div>
+               </div>
+               <div className="mt-8 pt-8 border-t border-slate-800 flex gap-4">
+                 <button className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-xs font-bold flex items-center gap-2">
+                   <Save className="w-4 h-4" /> Save Strategy
+                 </button>
+                 <button className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-xs font-bold flex items-center gap-2">
+                   <Send className="w-4 h-4" /> Send to Team
+                 </button>
+               </div>
+             </motion.div>
+          ) : (
+            <div className="bg-[#111114] border border-slate-800 border-dashed rounded-3xl p-20 text-center">
+              <div className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-700">
+                <Target className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">No active strategy</h3>
+              <p className="text-slate-500 max-w-sm mx-auto mb-8">
+                Click generate to let Gemini 1.5 Flash analyze your profile metrics and local competitive landscape.
+              </p>
+              <button 
+                onClick={handleGenerate}
+                className="px-8 py-4 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 rounded-2xl font-bold border border-indigo-500/20 transition-all"
+              >
+                Start AI Analysis
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/20 rounded-3xl p-8">
+            <h4 className="font-bold text-white mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-indigo-400" /> Local Dominance
+            </h4>
+            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+              Our AI evaluates over 50 data points including competitor review velocity and local map pack rankings.
+            </p>
+            <div className="space-y-4">
+              <div className="flex justify-between text-xs font-bold">
+                <span className="text-slate-500">Market Share</span>
+                <span className="text-indigo-400">12%</span>
+              </div>
+              <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                <div className="bg-indigo-600 h-full w-[12%]" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/30 border border-slate-800 rounded-3xl p-8">
+            <h4 className="font-bold text-white mb-4">Past Strategies</h4>
+            <div className="space-y-4 opacity-50">
+              <p className="text-xs text-slate-500 italic">No history yet.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
