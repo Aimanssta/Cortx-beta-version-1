@@ -139,15 +139,27 @@ export default function App() {
     if (!user) return;
     setSyncing(true);
     try {
+      console.log('Starting GBP Profile Sync...');
       const gLocations = await GoogleBusinessService.fetchAllUserLocations();
+      console.log(`Fetched ${gLocations.length} locations from Google.`);
       
+      if (gLocations.length === 0) {
+        alert("No business profiles found in your Google account. Make sure you have claimed businesses in Google Business Profile.");
+        return;
+      }
+
+      let newCount = 0;
       for (const loc of gLocations) {
         // Check if profile already exists in our Firestore
-        const exists = profiles.find(p => p.id === loc.name.split('/').pop() || (p as any).googleLocationId === loc.name);
+        // loc.name is "locations/{id}"
+        const locationId = loc.name.split('/').pop();
+        const exists = profiles.find(p => p.id === locationId || (p as any).googleLocationId === loc.name);
+        
         if (!exists) {
+          console.log(`Adding new location: ${loc.title}`);
           await addDoc(collection(db, 'profiles'), {
             name: loc.title,
-            address: loc.title, // Simplified for demo
+            address: loc.title, 
             phoneNumber: loc.storeCode || '',
             website: loc.websiteUri || '',
             category: loc.labels?.[0] || 'Business',
@@ -155,15 +167,23 @@ export default function App() {
             ownerId: user.uid,
             googleLocationId: loc.name
           });
+          newCount++;
         }
       }
-      alert(`Successfully synced ${gLocations.length} profiles from Google!`);
-    } catch (error) {
-      console.error("Sync failed:", error);
-      if (error instanceof Error && error.message.includes('authentication scopes')) {
-        alert("Authentication scopes missing. Please sign out and sign in again to grant permissions.");
+      
+      if (newCount > 0) {
+        alert(`Successfully synced ${gLocations.length} profiles! Added ${newCount} new ones.`);
       } else {
-        alert("Failed to sync profiles. Make sure you granted the necessary permissions.");
+        alert(`Your profiles are already up to date. (${gLocations.length} locations found)`);
+      }
+    } catch (error: any) {
+      console.error("Sync failed:", error);
+      if (error?.message?.includes('authentication scopes')) {
+        alert("Authentication scopes missing. Please sign out and sign in again to grant permissions.");
+      } else if (error?.message?.includes('403')) {
+        alert("Access Denied (403). Make sure the Business Profile API is enabled in your Google Cloud project.");
+      } else {
+        alert("Failed to sync profiles: " + (error?.message || "Unknown error"));
       }
     } finally {
       setSyncing(false);
@@ -708,7 +728,24 @@ export default function App() {
               )}
             </motion.div>
           )}
-          {['profile-audit', 'social', 'locations', 'content', 'performance'].includes(activeTab) && (
+          {activeTab === 'locations' && (
+            <motion.div
+              key="locations"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <ProfileManagement 
+                profiles={profiles} 
+                selectedProfile={selectedProfile} 
+                setSelectedProfile={setSelectedProfile} 
+                syncProfiles={syncProfiles}
+                syncing={syncing}
+              />
+            </motion.div>
+          )}
+
+          {['profile-audit', 'social', 'content', 'performance'].includes(activeTab) && (
             <motion.div
               key={activeTab}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -996,7 +1033,7 @@ function RecentReviews({ profileId }: { profileId: string }) {
   );
 }
 
-function ProfileManagement({ profiles, selectedProfile, setSelectedProfile, onProfileCreated }: any) {
+function ProfileManagement({ profiles, selectedProfile, setSelectedProfile, syncProfiles, syncing }: any) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<BusinessProfile>>({
     name: '', address: '', phoneNumber: '', website: '', category: '', hours: '', description: ''
@@ -1040,11 +1077,58 @@ function ProfileManagement({ profiles, selectedProfile, setSelectedProfile, onPr
     }
   }
 
+  if (profiles.length === 0 && !isEditing) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Store className="w-20 h-20 text-slate-800 mb-6" />
+        <h2 className="text-3xl font-bold mb-4">No Business Profiles Found</h2>
+        <p className="text-slate-500 max-w-md mb-10">
+          Sync your business locations directly from Google or create one manually to get started with CORTX AI tools.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button 
+            onClick={syncProfiles}
+            disabled={syncing}
+            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-3 transition-all disabled:opacity-70"
+          >
+            {syncing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+            {syncing ? 'Syncing with Google...' : 'Sync from Google Business'}
+          </button>
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="px-8 py-4 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all"
+          >
+            <Plus className="w-5 h-5" /> Add Manually
+          </button>
+        </div>
+        
+        <div className="mt-12 p-6 bg-indigo-600/5 rounded-2xl border border-indigo-500/10 text-left max-w-2xl">
+          <h4 className="text-sm font-bold text-indigo-400 mb-2 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" /> Why Sync?
+          </h4>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Syncing connects CORTX to your official Google Business Profile data. This allows our Gemini AI to respond to real reviews, analyze your rankings, and provide high-accuracy performance reports unique to your local presence.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Business Profile</h2>
+        <div>
+          <h2 className="text-3xl font-bold mb-1">Business Profiles</h2>
+          <p className="text-slate-400">Manage your locations and sync data from Google</p>
+        </div>
         <div className="flex gap-3">
+          <button 
+            onClick={syncProfiles}
+            disabled={syncing}
+            className="px-4 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} /> Sync
+          </button>
           {profiles.length > 0 && !isEditing && (
             <button 
               onClick={() => { setIsEditing(true); setFormData({ name: '', address: '', phoneNumber: '', website: '', category: '', hours: '', description: '' }); setSelectedProfile(null); }}

@@ -29,6 +29,9 @@ export interface GoogleAccount {
 
 export class GoogleBusinessService {
   private static STORAGE_KEY = 'gmb_access_token';
+  private static getApiKey(): string {
+    return ((import.meta as any).env?.VITE_GOOGLE_API_KEY as string) || '';
+  }
 
   static setToken(token: string) {
     localStorage.setItem(this.STORAGE_KEY, token);
@@ -40,9 +43,13 @@ export class GoogleBusinessService {
 
   static async fetchAccounts(): Promise<GoogleAccount[]> {
     const token = this.getToken();
-    if (!token) throw new Error('No access token found');
+    if (!token) throw new Error('No access token found. Please sign in with Google.');
 
-    const response = await fetch('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', {
+    const apiKey = this.getApiKey();
+    const url = `https://mybusinessaccountmanagement.googleapis.com/v1/accounts${apiKey ? `?key=${apiKey}` : ''}`;
+
+    console.log('Fetching GBP accounts from:', url);
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -50,10 +57,12 @@ export class GoogleBusinessService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to fetch accounts');
+      console.error('GBP Accounts Error:', error);
+      throw new Error(error.error?.message || `Failed to fetch accounts (${response.status})`);
     }
 
     const data = await response.json();
+    console.log('GBP Accounts Response:', data);
     return data.accounts || [];
   }
 
@@ -61,8 +70,12 @@ export class GoogleBusinessService {
     const token = this.getToken();
     if (!token) throw new Error('No access token found');
 
+    const apiKey = this.getApiKey();
     // Use the Business Information API to get locations
-    const response = await fetch(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title,storeCode,regularHours,websiteUri,metadata,labels`, {
+    const url = `https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title,storeCode,regularHours,websiteUri,metadata,labels${apiKey ? `&key=${apiKey}` : ''}`;
+
+    console.log(`Fetching locations for ${accountName} from: ${url}`);
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -70,22 +83,35 @@ export class GoogleBusinessService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to fetch locations');
+      console.error(`GBP Locations Error for ${accountName}:`, error);
+      // Don't throw here if one account fails, just return empty and log
+      return [];
     }
 
     const data = await response.json();
+    console.log(`GBP Locations for ${accountName}:`, data);
     return data.locations || [];
   }
 
   static async fetchAllUserLocations(): Promise<GoogleLocation[]> {
-    const accounts = await this.fetchAccounts();
-    const allLocations: GoogleLocation[] = [];
+    try {
+      const accounts = await this.fetchAccounts();
+      if (accounts.length === 0) {
+        console.warn('No Google Business accounts found for this user.');
+        return [];
+      }
 
-    for (const account of accounts) {
-      const locations = await this.fetchLocations(account.name);
-      allLocations.push(...locations);
+      const allLocations: GoogleLocation[] = [];
+
+      for (const account of accounts) {
+        const locations = await this.fetchLocations(account.name);
+        allLocations.push(...locations);
+      }
+
+      return allLocations;
+    } catch (error) {
+      console.error('fetchAllUserLocations catch block:', error);
+      throw error;
     }
-
-    return allLocations;
   }
 }
