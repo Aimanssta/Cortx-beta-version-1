@@ -99,7 +99,10 @@ export default function App() {
   const handleLogin = async () => {
     setLoginLoading(true);
     try {
-      googleProvider.setCustomParameters({ prompt: 'select_account' });
+      googleProvider.setCustomParameters({ 
+        prompt: 'consent', 
+        access_type: 'offline'
+      });
       const result = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
@@ -177,13 +180,17 @@ export default function App() {
         alert(`Your profiles are already up to date. (${gLocations.length} locations found)`);
       }
     } catch (error: any) {
-      console.error("Sync failed:", error);
+      console.error("Sync error detailed:", {
+        message: error?.message,
+        stack: error?.stack,
+        error
+      });
       if (error?.message?.includes('authentication scopes')) {
-        alert("Authentication scopes missing. Please sign out and sign in again to grant permissions.");
+        alert("Permissions Missing: When signing in, make sure to check the boxes for 'See, edit, create and delete your Google business listings'.");
       } else if (error?.message?.includes('403')) {
-        alert("Access Denied (403). Make sure the Business Profile API is enabled in your Google Cloud project.");
+        alert("Access Denied (403): The Google Business Profile API is not enabled or its restricted. Please visit the Google Cloud Console to enable 'Google Business Profile Management API'.");
       } else {
-        alert("Failed to sync profiles: " + (error?.message || "Unknown error"));
+        alert("Fetch Failed: " + (error?.message || "Unknown error") + ". Check the browser console (F12) for technical details.");
       }
     } finally {
       setSyncing(false);
@@ -425,6 +432,28 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-10"
             >
+              {profiles.length === 0 && (
+                <div className="bg-indigo-600 p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-indigo-500/40">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                      <Store className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-white">Action Required: Sync Your Business</h3>
+                      <p className="text-indigo-100 opacity-80">Connect your Google Business Profile to unlock AI insights and performance tracking.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={syncProfiles}
+                    disabled={syncing}
+                    className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-black hover:scale-105 transition-all shadow-xl flex items-center gap-3 disabled:opacity-50"
+                  >
+                    {syncing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                    {syncing ? 'Syncing Locations...' : 'Connect Now'}
+                  </button>
+                </div>
+              )}
+
               {/* Actions Grid */}
               <div className="bg-[#111114] border border-slate-800 rounded-3xl p-10">
                 <div className="flex items-center justify-between mb-8">
@@ -809,7 +838,10 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
           CORTX GBP helps you manage your Google Business Profile with Gemini AI. 
           Respond to reviews, track analytics, and optimize your local presence efficiently.
           <br /><br />
-          <span className="text-sm opacity-60">We use your Google data solely for dashboard analytics and AI-powered review responses. Your data is encrypted and never shared.</span>
+          <span className="text-sm border border-indigo-500/20 bg-indigo-500/5 p-4 rounded-xl block text-indigo-300">
+            <strong>Technical Note:</strong> Ensure the <strong>Google Business Profile API</strong> is enabled in your Google Cloud project. 
+            When signing in, you MUST check the boxes to grant profile management permissions.
+          </span>
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1106,9 +1138,20 @@ function ProfileManagement({ profiles, selectedProfile, setSelectedProfile, sync
           <h4 className="text-sm font-bold text-indigo-400 mb-2 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" /> Why Sync?
           </h4>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-slate-500 leading-relaxed mb-6">
             Syncing connects CORTX to your official Google Business Profile data. This allows our Gemini AI to respond to real reviews, analyze your rankings, and provide high-accuracy performance reports unique to your local presence.
           </p>
+          
+          <div className="pt-4 border-t border-slate-800">
+            <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2 uppercase tracking-wider">
+              <AlertCircle className="w-3 h-3 text-amber-500" /> Troubleshooting
+            </h4>
+            <div className="space-y-2 text-[10px] text-slate-400">
+              <p>• <strong>Important:</strong> You must check the boxes for <strong>"See, edit, create and delete your Google business listings"</strong> during login.</p>
+              <p>• If sync returns 0 results but you have locations, try logging out and logging back in to reset permissions.</p>
+              <p>• Ensure the <strong>Google Business Profile API</strong> is enabled in your Google Cloud Console.</p>
+            </div>
+          </div>
         </div>
       </div>
     );
