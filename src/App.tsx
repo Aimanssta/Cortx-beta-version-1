@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import React, { useState, useEffect } from 'react';
 import { 
   db, auth, googleProvider 
@@ -22,11 +23,16 @@ import { GoogleBusinessService } from './services/googleBusiness';
 import { GoogleAnalyticsService, AnalyticsMetrics, DayMetric } from './services/googleAnalytics';
 import { motion, AnimatePresence } from 'motion/react';
 import { handleFirestoreError, OperationType } from './lib/errorHandler';
-import { generateReviewResponse, generateMarketingStrategy } from './services/gemini';
+import { 
+  generateReviewResponse, generateMarketingStrategy, generatePostContent, generateQA, analyzeBusinessProfile 
+} from './services/gemini';
 import { LegalLayout, PrivacyPolicyContent, TermsOfServiceContent } from './Legal';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 // --- Types ---
 interface BusinessProfile {
@@ -73,10 +79,12 @@ interface GBPPost {
 
 // --- Components ---
 
+import { SEODashboard } from './components/SEODashboard';
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'profile-audit' | 'post-scheduler' | 'strategy' | 'social' | 'website' | 'locations' | 'content' | 'performance' | 'reviews'
+    'dashboard' | 'profile-audit' | 'post-scheduler' | 'strategy' | 'social' | 'website' | 'locations' | 'content' | 'performance' | 'reviews' | 'seo-engine' | 'qa'
   >('dashboard');
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<BusinessProfile | null>(null);
@@ -86,13 +94,54 @@ export default function App() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [posts, setPosts] = useState<GBPPost[]>([]);
   const [viewMode, setViewMode] = useState<'main' | 'privacy' | 'terms'>('main');
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [auditStatus, setAuditStatus] = useState<'none' | 'running' | 'completed'>('none');
+  const [auditResult, setAuditResult] = useState<any>(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
     if (page === 'privacy') setViewMode('privacy');
     else if (page === 'terms') setViewMode('terms');
+
+    const subscribed = params.get('subscribed');
+    if (subscribed === 'true') {
+      setIsSubscribed(true);
+      alert("Welcome to CORTX Premium! Your subscription is active.");
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (subscribed === 'false') {
+      alert("Subscription cancelled. You can upgrade anytime.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
+
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const handleUpgrade = async () => {
+    setIsUpgrading(true);
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const session = await response.json();
+
+      if (session.url) {
+        window.location.href = session.url;
+      } else {
+        throw new Error('Could not create checkout session');
+      }
+    } catch (error: any) {
+      console.error('Upgrade error:', error);
+      alert('Error creating checkout session: ' + error.message);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -317,24 +366,32 @@ export default function App() {
               label="Post Scheduler" 
               active={activeTab === 'post-scheduler'} 
               onClick={() => setActiveTab('post-scheduler')} 
+              locked={!isSubscribed}
+              onLockedClick={() => setShowSubscriptionModal(true)}
             />
             <SidebarLink 
               icon={<Zap />} 
               label="Advanced Strategy" 
               active={activeTab === 'strategy'} 
               onClick={() => setActiveTab('strategy')} 
+              locked={!isSubscribed}
+              onLockedClick={() => setShowSubscriptionModal(true)}
             />
             <SidebarLink 
               icon={<Share2 />} 
               label="Social Media" 
               active={activeTab === 'social'} 
               onClick={() => setActiveTab('social')} 
+              locked={!isSubscribed}
+              onLockedClick={() => setShowSubscriptionModal(true)}
             />
             <SidebarLink 
               icon={<FileSearch />} 
               label="Website Analysis" 
               active={activeTab === 'website'} 
               onClick={() => setActiveTab('website')} 
+              locked={!isSubscribed}
+              onLockedClick={() => setShowSubscriptionModal(true)}
             />
           </div>
 
@@ -352,12 +409,22 @@ export default function App() {
               label="Content & Posts" 
               active={activeTab === 'content'} 
               onClick={() => setActiveTab('content')} 
+              locked={!isSubscribed}
+              onLockedClick={() => setShowSubscriptionModal(true)}
             />
             <SidebarLink 
               icon={<BarChart3 />} 
               label="Performance" 
               active={activeTab === 'performance'} 
               onClick={() => setActiveTab('performance')} 
+            />
+            <SidebarLink 
+              icon={<Globe className="text-indigo-400" />} 
+              label="SEO Engine" 
+              active={activeTab === 'seo-engine'} 
+              onClick={() => setActiveTab('seo-engine')} 
+              locked={!isSubscribed}
+              onLockedClick={() => setShowSubscriptionModal(true)}
             />
           </div>
         </div>
@@ -383,8 +450,91 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Subscription Modal */}
+        <AnimatePresence>
+          {showSubscriptionModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowSubscriptionModal(false)}
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative bg-[#0a0a0c] border border-slate-800 rounded-3xl p-10 max-w-2xl w-full shadow-2xl overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-4">
+                  <button onClick={() => setShowSubscriptionModal(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col items-center text-center space-y-8">
+                  <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center border border-indigo-500/20">
+                    <Sparkles className="w-10 h-10 text-indigo-400" />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-4xl font-black text-white tracking-tighter">Become a <span className="text-indigo-500">Power Business</span></h3>
+                    <p className="text-slate-400 max-w-lg mx-auto leading-relaxed">
+                      Upgrade to CORTX Premium to unlock all AI tools, schedule unlimited posts, and access advanced competitor analytics.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-4">
+                    <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl text-left border-dashed">
+                      <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-widest text-indigo-400">Free Forever</h4>
+                      <ul className="space-y-3 text-xs text-slate-500">
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-emerald-500" /> Audit Reports</li>
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-emerald-500" /> Basic GBP Dashboard</li>
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-emerald-500" /> Profile Synchronization</li>
+                        <li className="flex items-center gap-2 opacity-30"><X className="w-3 h-3" /> AI Post Generation</li>
+                      </ul>
+                    </div>
+                    <div className="p-6 bg-indigo-600 rounded-2xl text-left shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+                      <div className="absolute -top-1 -right-1">
+                         <div className="bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 transform rotate-12">POPULAR</div>
+                      </div>
+                      <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-widest">Premium Plan</h4>
+                      <ul className="space-y-3 text-xs text-indigo-100">
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-white" /> AI Review Responses</li>
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-white" /> Smart Post Scheduler</li>
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-white" /> SEO Engine Access</li>
+                        <li className="flex items-center gap-2"><Check className="w-3 h-3 text-white" /> Advanced AI Strategy</li>
+                      </ul>
+                      <div className="mt-6 flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-white">$300</span>
+                        <span className="text-xs text-indigo-200">/mo</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={handleUpgrade}
+                    disabled={isUpgrading}
+                    className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-black transition-all shadow-xl shadow-indigo-500/20 uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isUpgrading ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Upgrade Now with Stripe'
+                    )}
+                  </button>
+                  <p className="text-[10px] text-slate-600 font-mono">Cancel anytime. 7-day money back guarantee.</p>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <header className="h-20 bg-[#0a0a0c] border-b border-slate-800 flex items-center justify-between px-8 shrink-0">
           <div className="flex items-center gap-6">
@@ -424,6 +574,17 @@ export default function App() {
 
         <main className="flex-1 p-6 md:p-10 bg-[#0c0c0e] overflow-y-auto custom-scrollbar relative">
           <AnimatePresence mode="wait">
+          {activeTab === 'seo-engine' && (
+            <motion.div
+              key="seo-engine"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <SEODashboard />
+            </motion.div>
+          )}
+
           {activeTab === 'dashboard' && (
             <motion.div
               key="dashboard"
@@ -454,6 +615,29 @@ export default function App() {
                 </div>
               )}
 
+              {profiles.length > 0 && auditStatus === 'none' && (
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-emerald-500/30 border border-emerald-500/20">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                      <ShieldCheck className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-2 py-0.5 bg-white/20 rounded text-[10px] font-black uppercase text-white mb-2">New Feature</div>
+                      <h3 className="text-2xl font-black text-white">Get Your Free Business Audit</h3>
+                      <p className="text-emerald-500 bg-white/90 px-2 py-0.5 rounded text-xs font-bold inline-block mb-2">Limited Time Offer</p>
+                      <p className="text-emerald-500 bg-white/90 px-2 py-0.5 rounded text-xs font-bold block">Analyze your profile's performance & visibility now.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTab('profile-audit')}
+                    className="px-8 py-4 bg-white text-emerald-600 rounded-xl font-black hover:scale-105 transition-all shadow-xl flex items-center gap-3"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Run Free Audit
+                  </button>
+                </div>
+              )}
+
               {/* Actions Grid */}
               <div className="bg-[#111114] border border-slate-800 rounded-3xl p-10">
                 <div className="flex items-center justify-between mb-8">
@@ -474,7 +658,7 @@ export default function App() {
                   <DashboardAction icon={<ShoppingBag />} label="Edit products" />
                   <DashboardAction icon={<Briefcase />} label="Edit services" />
                   <DashboardAction icon={<Calendar />} label="Bookings" />
-                  <DashboardAction icon={<HelpCircle />} label="Q & A" />
+                  <DashboardAction icon={<HelpCircle />} label="Q & A" onClick={() => setActiveTab('qa')} />
                 </div>
               </div>
 
@@ -774,7 +958,57 @@ export default function App() {
             </motion.div>
           )}
 
-          {['profile-audit', 'social', 'content', 'performance'].includes(activeTab) && (
+          {activeTab === 'qa' && (
+            <motion.div
+              key="qa"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {selectedProfile ? (
+                 <QAManager profile={selectedProfile} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <AlertCircle className="w-16 h-16 text-slate-700 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Access Denied</h3>
+                  <p className="text-slate-400">Please select or create a business profile first.</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === 'profile-audit' && (
+            <motion.div
+              key="profile-audit"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <ProfileAudit 
+                profiles={profiles} 
+                selectedProfile={selectedProfile} 
+                auditStatus={auditStatus}
+                auditResult={auditResult}
+                onRunAudit={async () => {
+                  if (!selectedProfile) return;
+                  setAuditStatus('running');
+                  try {
+                    const result = await analyzeBusinessProfile(selectedProfile);
+                    setAuditStatus('completed');
+                    setAuditResult(result);
+                  } catch (error) {
+                    console.error("Audit failed:", error);
+                    setAuditStatus('none');
+                    alert("Audit failed. Please try again.");
+                  }
+                }}
+                isSubscribed={isSubscribed}
+                onSubscribe={() => setShowSubscriptionModal(true)}
+              />
+            </motion.div>
+          )}
+
+          {['social', 'content', 'performance'].includes(activeTab) && (
             <motion.div
               key={activeTab}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -808,7 +1042,253 @@ export default function App() {
   );
 }
 
-// --- Sub-components ---
+function ProfileAudit({ 
+  profiles, 
+  selectedProfile, 
+  auditStatus, 
+  auditResult, 
+  onRunAudit,
+  isSubscribed,
+  onSubscribe
+}: { 
+  profiles: any[], 
+  selectedProfile: any, 
+  auditStatus: string, 
+  auditResult: any, 
+  onRunAudit: () => void,
+  isSubscribed: boolean,
+  onSubscribe: () => void
+}) {
+  if (profiles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-[#111114] border border-slate-800 rounded-3xl">
+        <Store className="w-16 h-16 text-slate-700 mb-6" />
+        <h3 className="text-2xl font-bold text-white mb-2">No Profiles Found</h3>
+        <p className="text-slate-500 max-w-md mb-8">You need to sync your Google Business Profile first to run an AI audit.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-10 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-black text-white tracking-tighter mb-2">AI Profile <span className="text-indigo-400">Audit</span></h2>
+          <p className="text-slate-500">Deep scan of your local search visibility and business reputation.</p>
+        </div>
+        
+        {auditStatus === 'none' && (
+          <button 
+            onClick={onRunAudit}
+            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black transition-all shadow-xl shadow-indigo-500/20 flex items-center gap-3"
+          >
+            <Sparkles className="w-5 h-5" />
+            Start Free Audit
+          </button>
+        )}
+      </div>
+
+      {auditStatus === 'running' && (
+        <div className="bg-[#111114] border border-slate-800 p-12 rounded-3xl flex flex-col items-center justify-center text-center space-y-8">
+          <div className="relative">
+            <div className="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Search className="w-8 h-8 text-indigo-400" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-white">Analyzing Your Presence...</h3>
+            <p className="text-slate-500 text-sm max-w-xs uppercase tracking-widest font-mono">Checking GBP optimization score</p>
+          </div>
+          <div className="w-full max-w-md bg-slate-900 h-1.5 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 3 }}
+              className="h-full bg-indigo-500" 
+            />
+          </div>
+        </div>
+      )}
+
+      {auditStatus === 'completed' && auditResult && (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="md:col-span-1 bg-[#111114] border border-slate-800 p-8 rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Overall Score</p>
+              <div className="relative mb-4">
+                <svg className="w-32 h-32 transform -rotate-90">
+                  <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-800" />
+                  <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={364 - (364 * auditResult.score) / 100} className="text-indigo-500" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-3xl font-black text-white">{auditResult.score}</span>
+                </div>
+              </div>
+              <p className="text-xs font-bold text-indigo-400 uppercase">Optimization Needed</p>
+            </div>
+
+            <div className="md:col-span-3 bg-indigo-600 p-8 rounded-3xl text-white flex flex-col justify-center">
+              <h3 className="text-2xl font-black mb-4">Top Recommendation</h3>
+              <p className="text-lg text-indigo-100 font-medium mb-8">"{auditResult.recommendation}"</p>
+              <div className="flex flex-wrap gap-3">
+                 <div className="px-4 py-2 bg-white/10 rounded-lg text-xs font-bold backdrop-blur-md border border-white/10">SEO Impact: High</div>
+                 <div className="px-4 py-2 bg-white/10 rounded-lg text-xs font-bold backdrop-blur-md border border-white/10">Effort: Low</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {auditResult.sections.map((section: any, idx: number) => (
+              <div key={idx} className="bg-[#111114] border border-slate-800 p-6 rounded-2xl flex items-start gap-4">
+                <div className={`p-3 rounded-xl ${section.status === 'Poor' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                  {section.score > 70 ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-bold text-white">{section.name}</h4>
+                    <span className="text-xs font-black uppercase px-2 py-0.5 bg-slate-900 rounded">{section.score}%</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-2">{section.findings}</p>
+                  <div className={`text-[10px] font-black uppercase tracking-widest ${
+                    section.status === 'Good' ? 'text-emerald-500' : 
+                    section.status === 'Fair' ? 'text-amber-500' : 
+                    'text-rose-500'
+                  }`}>
+                    Status: {section.status}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!isSubscribed && (
+            <div className="bg-gradient-to-br from-indigo-700 to-purple-800 p-10 rounded-3xl text-center space-y-6 shadow-2xl relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none" />
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full mb-6">
+                   <Zap className="w-3 h-3 text-amber-300" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white">Subscriber Exclusive</span>
+                </div>
+                <h3 className="text-3xl font-black text-white mb-4">Unlock Full Business Optimization</h3>
+                <p className="text-indigo-100 max-w-xl mx-auto mb-10 leading-relaxed text-sm">
+                  The audit revealed some critical gaps. Get CORTX Premium to auto-reply to reviews with AI, schedule posts for the month, and access deep competitor SEO insights.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <div className="flex -space-x-4 mb-4 sm:mb-0">
+                    {[1, 2, 3, 4].map(i => (
+                      <img key={i} src={`https://i.pravatar.cc/150?u=${i}`} className="w-10 h-10 rounded-full border-4 border-indigo-700 object-cover" />
+                    ))}
+                    <div className="w-10 h-10 rounded-full border-4 border-indigo-700 bg-indigo-900 flex items-center justify-center text-[10px] font-bold text-white">+2.1k</div>
+                  </div>
+                  <button 
+                    onClick={onSubscribe}
+                    className="px-10 py-5 bg-white text-indigo-600 rounded-2xl font-black hover:scale-105 transition-all shadow-2xl flex items-center gap-3 animate-bounce"
+                  >
+                    Subscribe Now to Optimize
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QAManager({ profile }: { profile: BusinessProfile }) {
+  const [qaPairs, setQAPairs] = useState<{ question: string, answer: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const q = query(collection(db, 'profiles', profile.id, 'qa'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setQAPairs(snapshot.docs.map(doc => doc.data() as { question: string, answer: string }));
+    });
+    return () => unsubscribe();
+  }, [profile.id]);
+
+  async function handleGenerateQA() {
+    setLoading(true);
+    try {
+      const result = await generateQA(profile);
+      const parsed = JSON.parse(result);
+      if (Array.isArray(parsed)) {
+        for (const pair of parsed) {
+          await addDoc(collection(db, 'profiles', profile.id, 'qa'), {
+            ...pair,
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+    } catch (error) {
+      console.error("QA generation failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold mb-1">Q&A Management</h2>
+          <p className="text-slate-400">Automate answers to common customer questions for <span className="text-indigo-400">{profile.name}</span></p>
+        </div>
+        <button 
+          onClick={handleGenerateQA}
+          disabled={loading}
+          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+        >
+          {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+          {loading ? 'Generating...' : 'Generate AI Q&As'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {qaPairs.length > 0 ? qaPairs.map((pair, idx) => (
+          <div key={idx} className="bg-[#111114] border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-indigo-500/30 transition-all group">
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 bg-indigo-600/10 rounded-lg flex items-center justify-center text-indigo-400 shrink-0">
+                <HelpCircle className="w-4 h-4" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-bold text-white text-lg leading-tight">{pair.question}</h4>
+                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800 text-sm text-slate-400 leading-relaxed italic">
+                  "{pair.answer}"
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+               <button className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white px-2 py-1">Sync to Google</button>
+               <button className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-400 px-2 py-1">Delete</button>
+            </div>
+          </div>
+        )) : (
+          <div className="md:col-span-2 py-20 bg-[#111114] border border-slate-800 border-dashed rounded-3xl text-center">
+            <HelpCircle className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">No Q&As yet</h3>
+            <p className="text-slate-500 max-w-sm mx-auto">Click generate to let AI create common questions and professional answers based on your business info.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CheckCircle2({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
+    </svg>
+  );
+}
+
+// Update App return to wrap everything in potentially a subscription gate if it's not the dashboard/audit
+
 
 function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, isLoading: boolean, onNavigate: (mode: 'privacy' | 'terms') => void }) {
   return (
@@ -861,19 +1341,19 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
 
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
           <FeatureCard 
+            title="Free AI Audit" 
+            desc="Get a deep analysis of your GBP visibility for free." 
+            icon={<ShieldCheck className="text-emerald-400" />}
+          />
+          <FeatureCard 
             title="AI Reviews" 
             desc="Generate professional responses with Gemini 1.5 Flash." 
             icon={<Sparkles className="text-indigo-400" />}
           />
           <FeatureCard 
-            title="Deep Analytics" 
-            desc="Track views, searches, and actions across all profiles." 
-            icon={<BarChart3 className="text-indigo-400" />}
-          />
-          <FeatureCard 
-            title="Multi-Profile" 
-            desc="Manage all your business locations from a single dashboard." 
-            icon={<Store className="text-indigo-400" />}
+            title="Smart Scheduler" 
+            desc="Optimize your posting frequency with AI-driven insights." 
+            icon={<Calendar className="text-purple-400" />}
           />
         </div>
       </motion.div>
@@ -902,15 +1382,15 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
   );
 }
 
-function SidebarLink({ icon, label, active, onClick, indicator }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void, indicator?: boolean }) {
+function SidebarLink({ icon, label, active, onClick, indicator, locked, onLockedClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void, indicator?: boolean, locked?: boolean, onLockedClick?: () => void }) {
   return (
     <button 
-      onClick={onClick}
+      onClick={locked ? onLockedClick : onClick}
       className={`relative w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group ${
         active 
           ? 'bg-indigo-600/10 text-white border border-indigo-500/20 shadow-[0_0_20px_rgba(79,70,229,0.1)]' 
           : 'text-slate-500 hover:text-slate-200 hover:bg-slate-800/30'
-      }`}
+      } ${locked ? 'opacity-60 cursor-pointer' : ''}`}
     >
       <span className={`w-5 h-5 transition-transform duration-300 ${active ? 'text-indigo-400 scale-110' : 'group-hover:text-slate-300 group-hover:scale-110'}`}>
         {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-full h-full stroke-[2.5]' }) : icon}
@@ -919,6 +1399,12 @@ function SidebarLink({ icon, label, active, onClick, indicator }: { icon: React.
       
       {indicator && active && (
         <div className="absolute right-3 w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.6)] animate-pulse"></div>
+      )}
+
+      {locked && (
+        <div className="absolute right-3 text-slate-600">
+          <ShieldCheck className="w-3.5 h-3.5" />
+        </div>
       )}
     </button>
   );
@@ -1339,11 +1825,16 @@ function AdvancedStrategy({ profile }: { profile: BusinessProfile }) {
   const [loading, setLoading] = useState(false);
 
   async function handleGenerate() {
+    if (!profile) return;
     setLoading(true);
-    const metrics = `Profile View: 1.2k, Conversions: 56, Rating: 4.8`;
-    const result = await generateMarketingStrategy(profile.name, profile.category, metrics);
-    setStrategy(result);
-    setLoading(false);
+    try {
+      const result = await generateMarketingStrategy(profile);
+      setStrategy(result);
+    } catch (error) {
+      console.error("Strategy generation failed:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -1590,9 +2081,22 @@ function PostScheduler({ profile, posts, profiles }: { profile: BusinessProfile,
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [targetProfiles, setTargetProfiles] = useState<string[]>([profile.id]);
+  const [isGeneratingPost, setIsGeneratingPost] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const profilePosts = posts.filter(p => p.profileId === profile.id);
+
+  async function handleAIGeneratePost() {
+    setIsGeneratingPost(true);
+    try {
+      const suggested = await generatePostContent(profile, "General update and promotion");
+      setContent(suggested);
+    } catch (error) {
+      console.error("Post generation failed:", error);
+    } finally {
+      setIsGeneratingPost(false);
+    }
+  }
 
   async function handleSchedule() {
     if (!content || !scheduledDate || !scheduledTime || !auth.currentUser) return;
@@ -1664,7 +2168,16 @@ function PostScheduler({ profile, posts, profiles }: { profile: BusinessProfile,
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Post Content</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Post Content</label>
+                      <button 
+                        onClick={handleAIGeneratePost}
+                        disabled={isGeneratingPost}
+                        className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 uppercase tracking-widest disabled:opacity-50"
+                      >
+                        <Sparkles className="w-3 h-3" /> {isGeneratingPost ? 'Drafting...' : 'AI Draft'}
+                      </button>
+                    </div>
                     <textarea 
                       value={content}
                       onChange={e => setContent(e.target.value)}

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gbp-seo-engine
+  labels:
+    app: gbp-seo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: gbp-seo
+  template:
+    metadata:
+      labels:
+        app: gbp-seo
+    spec:
+      containers:
+      - name: gbp-seo
+        image: gcr.io/cortx-ai/gbp-seo:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        envFrom:
+        - secretRef:
+            name: gbp-seo-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gbp-seo-service
+spec:
+  selector:
+    app: gbp-seo
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gbp-seo-ingress
+  annotations:
+    kubernetes.io/ingress.class: "cloudflare-tunnel"
+spec:
+  rules:
+  - host: gbp.cortxai.us
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gbp-seo-service
+            port:
+              number: 80
