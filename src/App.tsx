@@ -128,7 +128,15 @@ export default function App() {
           'Content-Type': 'application/json',
         },
       });
-      const session = await response.json();
+      
+      const responseText = await response.text();
+      let session;
+      try {
+        session = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Server returned non-JSON response:", responseText);
+        throw new Error(`The server returned an error page. This usually means the Stripe key is missing or the server is misconfigured. Response: ${responseText.substring(0, 100)}`);
+      }
 
       if (session.url) {
         window.location.href = session.url;
@@ -229,17 +237,17 @@ export default function App() {
         alert(`Your profiles are already up to date. (${gLocations.length} locations found)`);
       }
     } catch (error: any) {
-      console.error("Sync error detailed:", {
-        message: error?.message,
-        stack: error?.stack,
-        error
-      });
-      if (error?.message?.includes('authentication scopes')) {
-        alert("Permissions Missing: When signing in, make sure to check the boxes for 'See, edit, create and delete your Google business listings'.");
-      } else if (error?.message?.includes('403')) {
-        alert("Access Denied (403): The Google Business Profile API is not enabled or its restricted. Please visit the Google Cloud Console to enable 'Google Business Profile Management API'.");
+      console.error("Sync error detailed:", error);
+      
+      const errorMsg = error?.message || "";
+      if (errorMsg.includes('authentication credentials') || errorMsg.includes('401')) {
+        alert("Authentication Error: Your Google session may have expired or permissions were not granted.\n\nIMPORTANT: Please logout and login again. When signing in, YOU MUST CHECK THE BOXES to grant 'See, edit, create and delete your Google business listings' permissions. If you skip this, the sync will fail.");
+      } else if (errorMsg.includes('authentication scopes')) {
+        alert("Permissions Missing: When signing in, make sure to check the boxes for 'See, edit, create and delete your Google business listings'. You may need to logout and login again to see these checkboxes.");
+      } else if (errorMsg.includes('403') || errorMsg.includes('Google Business Profile API error')) {
+        alert("Access Denied: " + errorMsg + "\n\nTroubleshooting checklist:\n1. Enable 'My Business Account Management API'\n2. Enable 'My Business Business Information API'\n3. If your Cloud Project is in 'Testing', ensure your email is added as a Test User.");
       } else {
-        alert("Fetch Failed: " + (error?.message || "Unknown error") + ". Check the browser console (F12) for technical details.");
+        alert("Sync Failed: " + errorMsg + "\n\nIf the problem persists, please check your internet connection and try logging in again.");
       }
     } finally {
       setSyncing(false);
@@ -525,7 +533,7 @@ export default function App() {
                         Processing...
                       </>
                     ) : (
-                      'Upgrade Now with Stripe'
+                      'Get CortX GBP Live and start dominating market'
                     )}
                   </button>
                   <p className="text-[10px] text-slate-600 font-mono">Cancel anytime. 7-day money back guarantee.</p>
@@ -1319,8 +1327,8 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
           Respond to reviews, track analytics, and optimize your local presence efficiently.
           <br /><br />
           <span className="text-sm border border-indigo-500/20 bg-indigo-500/5 p-4 rounded-xl block text-indigo-300">
-            <strong>Technical Note:</strong> Ensure the <strong>Google Business Profile API</strong> is enabled in your Google Cloud project. 
-            When signing in, you MUST check the boxes to grant profile management permissions.
+            <strong>Technical Note:</strong> In your Google Cloud Console, enable <strong>"My Business Account Management API"</strong> and <strong>"My Business Business Information API"</strong>. 
+            When signing in, you <span className="text-rose-400 font-bold underline">MUST</span> check the permission boxes to grant profile management access.
           </span>
         </p>
 
@@ -1632,10 +1640,13 @@ function ProfileManagement({ profiles, selectedProfile, setSelectedProfile, sync
             <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2 uppercase tracking-wider">
               <AlertCircle className="w-3 h-3 text-amber-500" /> Troubleshooting
             </h4>
-            <div className="space-y-2 text-[10px] text-slate-400">
-              <p>• <strong>Important:</strong> You must check the boxes for <strong>"See, edit, create and delete your Google business listings"</strong> during login.</p>
+            <div className="space-y-3 text-[10px] text-slate-400">
+              <p>• <strong>Required APIs:</strong> Enable both <strong>"My Business Account Management"</strong> and <strong>"My Business Business Information"</strong> APIs in your Google Cloud Console.</p>
+              <p className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20 text-indigo-300">
+                • <strong>CRITICAL Permissions:</strong> You MUST manually check the permission boxes for <strong>"See, edit, create and delete your Google business listings"</strong> during the Google login popup. If missed, syncing will fail with authentication errors.
+              </p>
+              <p>• <strong>OAuth Setup:</strong> If self-hosting, ensure your current domain is in the <strong>"Authorized JavaScript Origins"</strong> list of your OAuth Client ID.</p>
               <p>• If sync returns 0 results but you have locations, try logging out and logging back in to reset permissions.</p>
-              <p>• Ensure the <strong>Google Business Profile API</strong> is enabled in your Google Cloud Console.</p>
             </div>
           </div>
         </div>
