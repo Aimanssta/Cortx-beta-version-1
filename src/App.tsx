@@ -314,8 +314,15 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#030305] flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-indigo-500/20 rounded-full" />
+          <div className="absolute inset-0 w-16 h-16 border-4 border-t-indigo-500 border-r-purple-500 border-b-transparent border-l-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-indigo-400 font-black text-xl">C</span>
+          </div>
+        </div>
+        <p className="text-slate-600 text-xs font-mono uppercase tracking-widest animate-pulse">Initializing CORTX...</p>
       </div>
     );
   }
@@ -335,117 +342,139 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
       {/* Sidebar */}
-      <nav className="w-full md:w-64 bg-[#0a0a0c] border-r border-slate-800 p-4 flex flex-col gap-6 md:h-screen sticky top-0 z-50">
-        <div className="flex items-center gap-3 px-2 mb-2">
-          <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <span className="font-extrabold text-white text-xl">C</span>
+      <nav className="w-full md:w-64 bg-[#08080a] border-r border-slate-800/60 p-4 flex flex-col gap-4 md:h-screen sticky top-0 z-50">
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-2 mb-1 py-2">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 bg-indigo-600 rounded-xl animate-pulse-glow" />
+            <div className="relative w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <span className="font-black text-white text-lg">C</span>
+            </div>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">CORTX GBP</h1>
-        </div>
-
-        <div className="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
-          <div className="mb-2">
-            <SidebarLink 
-              icon={<ShieldCheck />} 
-              label="Profile Audit" 
-              active={activeTab === 'profile-audit'} 
-              onClick={() => setActiveTab('profile-audit')} 
-              indicator
-            />
-          </div>
-
-          <div className="space-y-1">
-            <SidebarLink 
-              icon={<LayoutDashboard />} 
-              label="GBP Dashboard" 
-              active={activeTab === 'dashboard'} 
-              onClick={() => setActiveTab('dashboard')} 
-            />
-            <SidebarLink 
-              icon={<Calendar />} 
-              label="Post Scheduler" 
-              active={activeTab === 'post-scheduler'} 
-              onClick={() => setActiveTab('post-scheduler')} 
-              locked={!isSubscribed}
-              onLockedClick={() => setShowSubscriptionModal(true)}
-            />
-            <SidebarLink 
-              icon={<Zap />} 
-              label="Advanced Strategy" 
-              active={activeTab === 'strategy'} 
-              onClick={() => setActiveTab('strategy')} 
-              locked={!isSubscribed}
-              onLockedClick={() => setShowSubscriptionModal(true)}
-            />
-            <SidebarLink 
-              icon={<Share2 />} 
-              label="Social Media" 
-              active={activeTab === 'social'} 
-              onClick={() => setActiveTab('social')} 
-              locked={!isSubscribed}
-              onLockedClick={() => setShowSubscriptionModal(true)}
-            />
-            <SidebarLink 
-              icon={<FileSearch />} 
-              label="Website Analysis" 
-              active={activeTab === 'website'} 
-              onClick={() => setActiveTab('website')} 
-              locked={!isSubscribed}
-              onLockedClick={() => setShowSubscriptionModal(true)}
-            />
-          </div>
-
-          <div className="my-4 border-t border-slate-800" />
-
-          <div className="space-y-1">
-            <SidebarLink 
-              icon={<MapPin />} 
-              label="Locations" 
-              active={activeTab === 'locations'} 
-              onClick={() => setActiveTab('locations')} 
-            />
-            <SidebarLink 
-              icon={<FileText />} 
-              label="Content & Posts" 
-              active={activeTab === 'content'} 
-              onClick={() => setActiveTab('content')} 
-              locked={!isSubscribed}
-              onLockedClick={() => setShowSubscriptionModal(true)}
-            />
-            <SidebarLink 
-              icon={<BarChart3 />} 
-              label="Performance" 
-              active={activeTab === 'performance'} 
-              onClick={() => setActiveTab('performance')} 
-            />
-            <SidebarLink 
-              icon={<Globe className="text-indigo-400" />} 
-              label="SEO Engine" 
-              active={activeTab === 'seo-engine'} 
-              onClick={() => setActiveTab('seo-engine')} 
-              locked={!isSubscribed}
-              onLockedClick={() => setShowSubscriptionModal(true)}
-            />
+          <div>
+            <h1 className="text-base font-black text-white tracking-tight leading-none">CORTX</h1>
+            <p className="text-[10px] text-indigo-400 font-bold tracking-widest">GBP AI</p>
           </div>
         </div>
 
-        <div className="mt-auto pt-4 border-t border-slate-800">
-          <div className="flex items-center gap-3 px-2 mb-4">
-            <div className="relative">
-              <img src={user.photoURL || ''} alt="" className="w-10 h-10 rounded-full border-2 border-slate-700 p-0.5" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0a0c] rounded-full"></div>
+        <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar space-y-0.5">
+          {/* Pinned */}
+          <p className="sidebar-section-label">Featured</p>
+          <SidebarLink 
+            icon={<ShieldCheck />} 
+            label="Profile Audit" 
+            active={activeTab === 'profile-audit'} 
+            onClick={() => setActiveTab('profile-audit')} 
+            indicator
+          />
+
+          <p className="sidebar-section-label">Core</p>
+          <SidebarLink 
+            icon={<LayoutDashboard />} 
+            label="GBP Dashboard" 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+          />
+          <SidebarLink 
+            icon={<MapPin />} 
+            label="Locations" 
+            active={activeTab === 'locations'} 
+            onClick={() => setActiveTab('locations')} 
+          />
+          <SidebarLink 
+            icon={<BarChart3 />} 
+            label="Performance" 
+            active={activeTab === 'performance'} 
+            onClick={() => setActiveTab('performance')} 
+          />
+
+          <p className="sidebar-section-label">Advanced</p>
+          <SidebarLink 
+            icon={<Calendar />} 
+            label="Post Scheduler" 
+            active={activeTab === 'post-scheduler'} 
+            onClick={() => setActiveTab('post-scheduler')} 
+            locked={!isSubscribed}
+            onLockedClick={() => setShowSubscriptionModal(true)}
+          />
+          <SidebarLink 
+            icon={<Zap />} 
+            label="Advanced Strategy" 
+            active={activeTab === 'strategy'} 
+            onClick={() => setActiveTab('strategy')} 
+            locked={!isSubscribed}
+            onLockedClick={() => setShowSubscriptionModal(true)}
+          />
+          <SidebarLink 
+            icon={<FileText />} 
+            label="Content & Posts" 
+            active={activeTab === 'content'} 
+            onClick={() => setActiveTab('content')} 
+            locked={!isSubscribed}
+            onLockedClick={() => setShowSubscriptionModal(true)}
+          />
+
+          <p className="sidebar-section-label">Growth</p>
+          <SidebarLink 
+            icon={<Share2 />} 
+            label="Social Media" 
+            active={activeTab === 'social'} 
+            onClick={() => setActiveTab('social')} 
+            locked={!isSubscribed}
+            onLockedClick={() => setShowSubscriptionModal(true)}
+          />
+          <SidebarLink 
+            icon={<FileSearch />} 
+            label="Website Analysis" 
+            active={activeTab === 'website'} 
+            onClick={() => setActiveTab('website')} 
+            locked={!isSubscribed}
+            onLockedClick={() => setShowSubscriptionModal(true)}
+          />
+          <SidebarLink 
+            icon={<Globe className="text-indigo-400" />} 
+            label="SEO Engine" 
+            active={activeTab === 'seo-engine'} 
+            onClick={() => setActiveTab('seo-engine')} 
+            locked={!isSubscribed}
+            onLockedClick={() => setShowSubscriptionModal(true)}
+          />
+
+          {/* Upgrade Banner */}
+          {!isSubscribed && (
+            <div className="mt-4 mx-1 p-4 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/25 rounded-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-indigo-400" />
+                <span className="text-xs font-black text-white">Go Premium</span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed mb-3">Unlock AI scheduling, SEO engine, and advanced strategy tools.</p>
+              <button
+                onClick={() => setShowSubscriptionModal(true)}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-black transition-colors"
+              >
+                Upgrade — $300/mo
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="pt-3 border-t border-slate-800/60">
+          <div className="flex items-center gap-3 px-2 mb-3">
+            <div className="relative shrink-0">
+              <img src={user.photoURL || ''} alt="" className="w-9 h-9 rounded-full border-2 border-slate-700" />
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#08080a] rounded-full" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{user.displayName}</p>
-              <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+              <p className="text-xs font-bold text-white truncate">{user.displayName}</p>
+              <p className="text-[10px] text-slate-600 truncate">{user.email}</p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors group"
+            className="w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-white hover:bg-slate-800/40 rounded-xl transition-colors group text-sm"
           >
-            <LogOut className="w-5 h-5 group-hover:text-red-400" />
-            <span className="text-sm font-medium">Log out</span>
+            <LogOut className="w-4 h-4 group-hover:text-red-400 transition-colors" />
+            <span className="font-medium">Sign out</span>
           </button>
         </div>
       </nav>
@@ -536,38 +565,61 @@ export default function App() {
         </AnimatePresence>
 
         {/* Header */}
-        <header className="h-20 bg-[#0a0a0c] border-b border-slate-800 flex items-center justify-between px-8 shrink-0">
-          <div className="flex items-center gap-6">
+        <header className="h-16 bg-[#08080a] border-b border-slate-800/60 flex items-center justify-between px-6 shrink-0">
+          <div className="flex items-center gap-4">
             <div className="relative group">
-              <button className="flex items-center gap-3 bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-lg border border-slate-800 transition-all font-bold min-w-[220px]">
-                <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-[10px] shrink-0">BR</div>
-                <span className="truncate">{selectedProfile?.name || 'Select Business'}</span>
-                <ChevronRight className="w-4 h-4 ml-auto rotate-90 text-slate-500" />
+              <button className="flex items-center gap-3 bg-slate-900/70 hover:bg-slate-800/80 px-3 py-2 rounded-xl border border-slate-800 transition-all font-bold min-w-[200px]">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-black shrink-0">BR</div>
+                <span className="truncate text-sm">{selectedProfile?.name || 'Select Business'}</span>
+                <ChevronRight className="w-4 h-4 ml-auto rotate-90 text-slate-500 shrink-0" />
               </button>
             </div>
             
             <button 
               onClick={syncProfiles}
               disabled={syncing}
-              className="flex items-center gap-2 px-3 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/20 transition-all text-xs font-bold disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/20 transition-all text-xs font-bold disabled:opacity-50"
             >
-              <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync Profiles'}
+              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync'}
             </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
-              <Bell className="w-6 h-6" />
-              <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#0a0a0c]"></div>
-            </button>
-            
-            <div className="flex items-center gap-3 border-l border-slate-800 pl-6 h-10">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-white">{user.displayName}</p>
-                <p className="text-xs text-slate-500">{user.email?.split('@')[0]}@cortx.ai</p>
+          <div className="flex items-center gap-3">
+            {/* Notifications */}
+            <div className="relative group">
+              <button className="relative p-2 text-slate-500 hover:text-white hover:bg-slate-800/60 rounded-xl transition-all">
+                <Bell className="w-5 h-5" />
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-[#08080a]" />
+              </button>
+              {/* Dropdown */}
+              <div className="absolute right-0 top-full mt-2 w-72 bg-[#111114] border border-slate-800 rounded-2xl shadow-2xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 overflow-hidden">
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Notifications</span>
+                  <span className="badge-indigo">3 new</span>
+                </div>
+                {[
+                  { msg: 'New 5★ review from John S.', time: '2 min ago', dot: 'bg-emerald-500' },
+                  { msg: 'Profile audit completed', time: '1 hr ago', dot: 'bg-indigo-500' },
+                  { msg: 'Scheduled post published', time: '3 hrs ago', dot: 'bg-purple-500' },
+                ].map((n, i) => (
+                  <div key={i} className="flex items-start gap-3 p-4 hover:bg-slate-900/50 transition-colors cursor-pointer border-b border-slate-800/50 last:border-0">
+                    <div className={`w-2 h-2 rounded-full ${n.dot} mt-1.5 shrink-0`} />
+                    <div>
+                      <p className="text-xs font-medium text-slate-300">{n.msg}</p>
+                      <p className="text-[10px] text-slate-600 mt-0.5">{n.time}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <img src={user.photoURL || ''} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-700" />
+            </div>
+            
+            <div className="flex items-center gap-3 border-l border-slate-800/60 pl-3 h-10">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-white">{user.displayName}</p>
+                <p className="text-[10px] text-slate-600">{user.email?.split('@')[0]}@cortx.ai</p>
+              </div>
+              <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-700" />
             </div>
           </div>
         </header>
@@ -665,72 +717,81 @@ export default function App() {
               {/* Stats and Online Presence */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 bg-[#111114] border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center justify-between mb-8">
                     <div>
-                      <h3 className="text-2xl font-bold text-white mb-2">Performance</h3>
+                      <h3 className="text-2xl font-black text-white mb-1 tracking-tighter">Performance</h3>
                       <p className="text-slate-500 text-sm">Interactions with your profile</p>
                     </div>
-                    <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold text-indigo-400 transition-colors">
-                      View Report
+                    <button className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-xl text-xs font-bold text-indigo-400 transition-colors border border-slate-800">
+                      View Full Report
                     </button>
                   </div>
 
-                  <div className="flex items-end gap-20">
-                    <div>
-                      <h4 className="text-4xl font-extrabold text-white mb-1">1.2k</h4>
-                      <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Profile views</p>
-                    </div>
-                    <div>
-                      <h4 className="text-4xl font-extrabold text-white mb-1">84</h4>
-                      <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Calls</p>
-                    </div>
-                    <div>
-                      <h4 className="text-4xl font-extrabold text-white mb-1">156</h4>
-                      <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Website clicks</p>
-                    </div>
-                    
-                    <div className="flex-1 h-32 relative">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={[
-                          {v: 30}, {v: 45}, {v: 25}, {v: 60}, {v: 40}, {v: 80}, {v: 65}
-                        ]}>
-                          <defs>
-                            <linearGradient id="tinyChart" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <Area type="monotone" dataKey="v" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#tinyChart)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <div className="grid grid-cols-3 gap-6 mb-6">
+                    {[
+                      { label: 'Profile Views', value: '1.2k', delta: '+18%', color: 'text-indigo-400' },
+                      { label: 'Calls', value: '84', delta: '+6%', color: 'text-emerald-400' },
+                      { label: 'Website Clicks', value: '156', delta: '+22%', color: 'text-purple-400' },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <h4 className={`text-3xl font-black mb-1 ${item.color}`}>{item.value}</h4>
+                        <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">{item.label}</p>
+                        <span className="text-[10px] font-bold text-emerald-400">{item.delta} this month</span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="h-28 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={[
+                        {v: 30}, {v: 45}, {v: 25}, {v: 60}, {v: 40}, {v: 80}, {v: 65}
+                      ]}>
+                        <defs>
+                          <linearGradient id="tinyChart" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <Area type="monotone" dataKey="v" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#tinyChart)" dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
 
-                <div className="bg-[#111114] border border-slate-800 rounded-3xl p-8">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-bold text-white">Online Presence</h3>
-                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold rounded-full uppercase tracking-widest border border-emerald-500/20">Active</span>
+                <div className="bg-[#111114] border border-slate-800 rounded-3xl p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-base font-bold text-white">Live Activity</h3>
+                    <span className="badge-live"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />Live</span>
                   </div>
-
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800/50 group hover:border-indigo-500/30 transition-all cursor-pointer">
-                      <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-400 transition-colors">
-                        <Globe className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-white">Website</p>
-                        <p className="text-xs text-slate-500">borgesroofing.com</p>
-                      </div>
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <PresenceItem icon={<Facebook className="w-5 h-5" />} color="text-indigo-400" />
-                      <PresenceItem icon={<Instagram className="w-5 h-5" />} color="text-pink-400" />
-                      <PresenceItem icon={<Twitter className="w-5 h-5" />} color="text-sky-400" />
-                      <PresenceItem icon={<Share2 className="w-5 h-5" />} color="text-slate-400" />
-                    </div>
+                  <div className="space-y-3">
+                    {[
+                      { msg: 'New 5★ review received', time: '2m ago', icon: '⭐', color: 'bg-amber-500/10 text-amber-400' },
+                      { msg: 'Profile viewed 12 times', time: '15m ago', icon: '👁', color: 'bg-indigo-500/10 text-indigo-400' },
+                      { msg: 'Direction request from Maps', time: '1h ago', icon: '📍', color: 'bg-emerald-500/10 text-emerald-400' },
+                      { msg: 'Post reached 240 people', time: '3h ago', icon: '📢', color: 'bg-purple-500/10 text-purple-400' },
+                      { msg: 'Website click via GBP', time: '5h ago', icon: '🌐', color: 'bg-sky-500/10 text-sky-400' },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.08 }}
+                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-900/50 transition-colors cursor-default"
+                      >
+                        <div className={`w-8 h-8 rounded-lg ${item.color} flex items-center justify-center text-sm shrink-0`}>
+                          {item.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-300 leading-snug">{item.msg}</p>
+                          <p className="text-[10px] text-slate-600 mt-0.5">{item.time}</p>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1032,10 +1093,14 @@ export default function App() {
           </AnimatePresence>
 
           {/* Voice Chat Floating Button */}
-          <button className="fixed bottom-10 right-10 flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full font-black uppercase tracking-widest shadow-[0_10px_40px_rgba(79,70,229,0.4)] transition-all transform hover:scale-105 active:scale-95 z-50">
-            <Mic className="w-6 h-6" />
-            <span>Voice Chat</span>
-          </button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="fixed bottom-8 right-8 flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-black uppercase tracking-widest shadow-[0_10px_40px_rgba(79,70,229,0.5)] z-50 glow-indigo"
+          >
+            <Mic className="w-5 h-5" />
+            <span className="text-sm">Voice Chat</span>
+          </motion.button>
         </main>
       </div>
     </div>
@@ -1292,89 +1357,175 @@ function CheckCircle2({ className }: { className?: string }) {
 
 function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, isLoading: boolean, onNavigate: (mode: 'privacy' | 'terms') => void }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden text-center">
-      {/* Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-900 bg-grid-mask z-0" />
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full z-0" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 blur-[120px] rounded-full z-0" />
+    <div className="min-h-screen bg-[#030305] text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden text-center">
+      {/* Animated Orbs */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-[-15%] right-[-5%] w-[50vw] h-[50vw] bg-indigo-700/25 rounded-full blur-[120px] animate-float" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[45vw] h-[45vw] bg-purple-700/20 rounded-full blur-[120px] animate-float-slow" />
+        <div className="absolute top-[40%] left-[35%] w-[25vw] h-[25vw] bg-blue-600/10 rounded-full blur-[80px] animate-float" style={{ animationDelay: '3s' }} />
+        <div className="absolute top-0 left-0 w-full h-full bg-grid-slate-900 bg-grid-mask" />
+      </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+      {/* Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-4xl z-10"
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        className="max-w-5xl z-10 w-full"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full mb-8">
-          <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-          <span className="text-xs font-medium text-slate-300">Beta Version 1.0</span>
-        </div>
-        
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tight text-white leading-tight">
-          CORTX <br />
-          <span className="gradient-text">GBP AI</span>
-        </h1>
-        
-        <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-          CORTX GBP helps you manage your Google Business Profile with Gemini AI. 
-          Respond to reviews, track analytics, and optimize your local presence efficiently.
-          <br /><br />
-          <span className="text-sm border border-indigo-500/20 bg-indigo-500/5 p-4 rounded-xl block text-indigo-300">
-            <strong>Technical Note:</strong> Ensure the <strong>Google Business Profile API</strong> is enabled in your Google Cloud project. 
-            When signing in, you MUST check the boxes to grant profile management permissions.
-          </span>
-        </p>
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-full mb-8"
+        >
+          <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+          <span className="text-xs font-bold text-indigo-300 tracking-wide">Beta v1.0 — Now Live</span>
+          <ChevronRight className="w-3 h-3 text-indigo-400" />
+        </motion.div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button 
+        {/* Headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
+          className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tighter leading-none"
+        >
+          <span className="text-white">CORTX </span>
+          <span className="gradient-text">GBP AI</span>
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.6 }}
+          className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed"
+        >
+          The AI-powered command center for your Google Business Profile.
+          Respond to reviews, schedule posts, and dominate local search — all powered by Gemini AI.
+        </motion.p>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
+        >
+          <button
             onClick={onLogin}
             disabled={isLoading}
-            className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-3 disabled:opacity-70"
+            className="group relative px-10 py-4 btn-primary text-white rounded-2xl font-black text-sm tracking-wide transition-all shadow-2xl shadow-indigo-500/30 flex items-center justify-center gap-3 disabled:opacity-70 overflow-hidden"
           >
-            {isLoading ? (
-              <RefreshCw className="w-5 h-5 animate-spin" />
-            ) : (
-              <Globe className="w-5 h-5" />
-            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Globe className="w-5 h-5" />}
             {isLoading ? 'Connecting...' : 'Get Started with Google'}
           </button>
-        </div>
+          <button
+            onClick={() => onNavigate('privacy')}
+            className="px-8 py-4 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 text-slate-300 rounded-2xl font-bold text-sm transition-all"
+          >
+            Learn More
+          </button>
+        </motion.div>
 
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <FeatureCard 
-            title="Free AI Audit" 
-            desc="Get a deep analysis of your GBP visibility for free." 
-            icon={<ShieldCheck className="text-emerald-400" />}
-          />
-          <FeatureCard 
-            title="AI Reviews" 
-            desc="Generate professional responses with Gemini 1.5 Flash." 
-            icon={<Sparkles className="text-indigo-400" />}
-          />
-          <FeatureCard 
-            title="Smart Scheduler" 
-            desc="Optimize your posting frequency with AI-driven insights." 
-            icon={<Calendar className="text-purple-400" />}
-          />
-        </div>
+        {/* Social Proof */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.65, duration: 0.6 }}
+          className="flex flex-wrap items-center justify-center gap-8 mb-16 text-center"
+        >
+          {[
+            { value: '2,100+', label: 'Businesses' },
+            { value: '4.9★', label: 'User Rating' },
+            { value: '98%', label: 'Uptime SLA' },
+            { value: '10M+', label: 'AI Actions' },
+          ].map((stat, i) => (
+            <div key={i} className="px-6 py-3 bg-slate-900/50 border border-slate-800/60 rounded-2xl">
+              <p className="text-2xl font-black text-white">{stat.value}</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">{stat.label}</p>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Features Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75, duration: 0.6 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left mb-16"
+        >
+          <FeatureCard title="Free AI Audit" desc="Deep-scan your GBP visibility, reputation, and local SEO gaps instantly." icon={<ShieldCheck className="text-emerald-400" />} />
+          <FeatureCard title="AI Review Replies" desc="Generate professional, on-brand responses with Gemini 1.5 Flash in one click." icon={<Sparkles className="text-indigo-400" />} />
+          <FeatureCard title="Smart Post Scheduler" desc="AI drafts and schedules posts at peak engagement times across all your locations." icon={<Calendar className="text-purple-400" />} />
+          <FeatureCard title="SEO Engine" desc="Programmatically generate and index 1,000+ location landing pages at scale." icon={<Globe className="text-sky-400" />} />
+          <FeatureCard title="Performance Analytics" desc="Track views, calls, directions, and website clicks from a single dashboard." icon={<BarChart3 className="text-amber-400" />} />
+          <FeatureCard title="Q&A Automation" desc="Auto-answer common customer questions with AI to boost profile engagement." icon={<MessageSquare className="text-pink-400" />} />
+        </motion.div>
+
+        {/* Pricing Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85, duration: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mb-16"
+        >
+          <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl text-left">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Free Forever</p>
+            <p className="text-3xl font-black text-white mb-4">$0<span className="text-sm font-medium text-slate-500">/mo</span></p>
+            <ul className="space-y-2 text-xs text-slate-400">
+              {['AI Profile Audit', 'GBP Dashboard', 'Profile Sync', 'Review Management'].map(f => (
+                <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500" />{f}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="p-6 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl text-left relative overflow-hidden shadow-2xl shadow-indigo-500/30">
+            <div className="absolute top-3 right-3 px-2 py-0.5 bg-amber-400 text-amber-900 text-[9px] font-black rounded uppercase tracking-wider">Popular</div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-3">Premium</p>
+            <p className="text-3xl font-black text-white mb-4">$300<span className="text-sm font-medium text-indigo-200">/mo</span></p>
+            <ul className="space-y-2 text-xs text-indigo-100">
+              {['Everything in Free', 'AI Post Scheduler', 'Advanced Strategy', 'SEO Engine Access', 'Social Media Tools'].map(f => (
+                <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-white" />{f}</li>
+              ))}
+            </ul>
+          </div>
+        </motion.div>
+
+        {/* Technical note */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.95, duration: 0.5 }}
+          className="text-sm border border-indigo-500/20 bg-indigo-500/5 p-4 rounded-xl text-indigo-300/80 max-w-2xl mx-auto"
+        >
+          <strong className="text-indigo-300">Technical Note:</strong> Ensure the <strong>Google Business Profile API</strong> is enabled in your Google Cloud project.
+          When signing in, check the boxes to grant profile management permissions.
+        </motion.div>
       </motion.div>
 
-      {/* Footer with Legal Links */}
-      <footer className="absolute bottom-8 left-0 w-full z-10 px-8 text-center sm:text-left">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-600">
-          <p>© 2024 CORTX GBP. All rights reserved.</p>
+      {/* Footer */}
+      <footer className="absolute bottom-6 left-0 w-full z-10 px-8 text-center">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-xs text-slate-600">
+          <p>© 2025 CORTX GBP. All rights reserved.</p>
           <div className="flex gap-6">
-            <button 
-              onClick={() => onNavigate('privacy')}
-              className="hover:text-slate-300 transition-colors cursor-pointer"
+            <a
+              href="https://gbp.cortxai.us/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
             >
               Privacy Policy
-            </button>
-            <button 
-              onClick={() => onNavigate('terms')}
-              className="hover:text-slate-300 transition-colors cursor-pointer"
+            </a>
+            <a
+              href="https://gbp.cortxai.us/terms-of-service"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
             >
               Terms of Service
-            </button>
+            </a>
           </div>
         </div>
       </footer>
@@ -1451,11 +1602,16 @@ function GoalItem({ label, count, target, color }: { label: string, count: numbe
 
 function FeatureCard({ title, desc, icon }: { title: string, desc: string, icon: React.ReactNode }) {
   return (
-    <div className="glass-card p-6 flex flex-col gap-3">
-      <div className="p-2 bg-slate-800/50 rounded-lg w-fit">{icon}</div>
+    <motion.div
+      whileHover={{ y: -3 }}
+      className="glass-card p-6 flex flex-col gap-3 cursor-default"
+    >
+      <div className="p-2.5 bg-slate-800/60 rounded-xl w-fit">
+        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' }) : icon}
+      </div>
       <h3 className="font-bold text-white tracking-tight">{title}</h3>
       <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -1934,6 +2090,7 @@ function ReviewManagement({ profile }: { profile: BusinessProfile }) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'positive' | 'negative' | 'pending'>('all');
 
   useEffect(() => {
     const q = query(collection(db, 'profiles', profile.id, 'reviews'));
@@ -1963,111 +2120,186 @@ function ReviewManagement({ profile }: { profile: BusinessProfile }) {
     }
   }
 
+  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+  const ratingCounts = [5,4,3,2,1].map(r => ({ star: r, count: reviews.filter(rv => rv.rating === r).length }));
+
+  const filteredReviews = reviews.filter(r => {
+    if (filter === 'positive') return r.rating >= 4;
+    if (filter === 'negative') return r.rating <= 2;
+    if (filter === 'pending') return !r.response;
+    return true;
+  });
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold mb-1">Customer Reviews</h2>
-          <p className="text-slate-400">Managing feedback for <span className="font-bold text-blue-400">{profile.name}</span></p>
+          <h2 className="text-3xl font-black text-white tracking-tighter mb-1">Customer <span className="gradient-text">Reviews</span></h2>
+          <p className="text-slate-500">Managing feedback for <span className="font-bold text-indigo-400">{profile.name}</span></p>
         </div>
-        <div className="flex items-center gap-4 px-4 py-2 bg-slate-900 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-3 px-5 py-3 bg-slate-900 rounded-2xl border border-slate-800">
           <div className="flex gap-0.5">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className={`w-4 h-4 ${i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
+              <Star key={i} className={`w-4 h-4 ${i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
             ))}
           </div>
-          <span className="text-sm font-bold">4.8 Overall</span>
+          <span className="text-sm font-black text-white">{avgRating.toFixed(1)}</span>
+          <span className="text-xs text-slate-500">({reviews.length} reviews)</span>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {reviews.length > 0 ? reviews.map(review => (
-          <div key={review.id} className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+      {/* Rating Distribution */}
+      {reviews.length > 0 && (
+        <div className="bg-[#111114] border border-slate-800 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Rating Breakdown</h3>
+            <div className="space-y-2">
+              {ratingCounts.map(({ star, count }) => (
+                <div key={star} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500 w-4">{star}</span>
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 shrink-0" />
+                  <div className="flex-1 bg-slate-900 h-2 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: reviews.length > 0 ? `${(count / reviews.length) * 100}%` : '0%' }}
+                      transition={{ duration: 0.8 }}
+                      className={`h-full rounded-full ${star >= 4 ? 'bg-emerald-500' : star === 3 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-500 w-4">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-6xl font-black text-white mb-1">{avgRating.toFixed(1)}</p>
+              <div className="flex justify-center gap-0.5 mb-2">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={`w-5 h-5 ${i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
+                ))}
+              </div>
+              <p className="text-xs text-slate-500">{reviews.length} total reviews</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {(['all', 'positive', 'negative', 'pending'] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              filter === f
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {f} {f === 'all' ? `(${reviews.length})` : f === 'positive' ? `(${reviews.filter(r=>r.rating>=4).length})` : f === 'negative' ? `(${reviews.filter(r=>r.rating<=2).length})` : `(${reviews.filter(r=>!r.response).length})`}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        {filteredReviews.length > 0 ? filteredReviews.map(review => (
+          <motion.div
+            key={review.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card rounded-2xl p-6 relative group overflow-hidden"
+          >
             {review.response && (
-              <div className="absolute top-0 right-0 p-1">
-                <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-bl-xl text-[10px] font-bold uppercase flex items-center gap-1">
+              <div className="absolute top-0 right-0">
+                <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-bl-2xl text-[10px] font-black uppercase flex items-center gap-1">
                   <Check className="w-3 h-3" /> Responded
                 </div>
               </div>
             )}
             
-            <div className="flex gap-6">
-              <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-primary font-bold border border-slate-800">
+            <div className="flex gap-5">
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg shadow-indigo-500/20">
                 {review.reviewerName[0]}
               </div>
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-lg">{review.reviewerName}</h4>
-                    <div className="flex gap-1 mt-1">
+                    <h4 className="font-bold text-white">{review.reviewerName}</h4>
+                    <div className="flex gap-0.5 mt-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
                       ))}
                     </div>
                   </div>
-                  <span className="text-xs text-slate-500">2 days ago</span>
+                  <span className="text-xs text-slate-600">2 days ago</span>
                 </div>
                 
-                <p className="text-slate-300 leading-relaxed italic border-l-2 border-slate-800 pl-4 py-1">
+                <p className="text-slate-300 leading-relaxed text-sm italic border-l-2 border-indigo-500/30 pl-4 py-1">
                   "{review.comment}"
                 </p>
 
                 {review.response ? (
-                  <div className="bg-slate-950/50 p-4 rounded-xl border border-blue-500/10">
+                  <div className="bg-slate-950/60 p-4 rounded-xl border border-indigo-500/10">
                     <div className="flex items-center gap-2 mb-2">
-                       <Store className="w-3 h-3 text-blue-400" />
-                       <span className="text-[10px] font-bold text-slate-500 uppercase">Your Response</span>
+                      <Store className="w-3 h-3 text-indigo-400" />
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Your Response</span>
                     </div>
-                    <p className="text-sm text-slate-400">{review.response}</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">{review.response}</p>
                   </div>
                 ) : (
-                  <div className="pt-2">
+                  <div className="pt-1">
                     {replyingTo === review.id ? (
-                      <div className="space-y-3 p-4 bg-slate-900/50 rounded-xl">
+                      <div className="space-y-3 p-4 bg-slate-900/60 rounded-xl border border-slate-800">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-500 uppercase">Draft Reply</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Draft Reply</span>
                           <button 
                             onClick={() => handleAIGenerate(review)}
                             disabled={isGenerating}
-                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-bold disabled:opacity-50"
+                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-bold disabled:opacity-50"
                           >
-                            <Sparkles className="w-3 h-3" /> {isGenerating ? 'Generating...' : 'Regenerate with AI'}
+                            <Sparkles className="w-3 h-3" /> {isGenerating ? 'Generating...' : 'AI Draft'}
                           </button>
                         </div>
                         <textarea 
                           value={replyText}
                           onChange={e => setReplyText(e.target.value)}
                           rows={3}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary resize-none"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 resize-none transition-colors"
                           placeholder="Type your response or use AI..."
                         />
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => { setReplyingTo(null); setReplyText(''); }} className="text-xs px-3 py-1 text-slate-500">Cancel</button>
-                          <button 
-                            onClick={() => handleSendReply(review.id)}
-                            className="text-xs px-4 py-1.5 bg-primary hover:bg-primary-hover rounded-lg font-bold flex items-center gap-1"
-                          >
-                            <Send className="w-3 h-3" /> Send Response
-                          </button>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-slate-600">{replyText.length} chars</span>
+                          <div className="flex gap-2">
+                            <button onClick={() => { setReplyingTo(null); setReplyText(''); }} className="text-xs px-3 py-1.5 text-slate-500 hover:text-white transition-colors">Cancel</button>
+                            <button 
+                              onClick={() => handleSendReply(review.id)}
+                              className="text-xs px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-bold flex items-center gap-1.5 transition-colors"
+                            >
+                              <Send className="w-3 h-3" /> Send
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
                       <button 
                          onClick={() => { setReplyingTo(review.id); setReplyText(''); }}
-                         className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
+                         className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold flex items-center gap-2 transition-all hover:border-indigo-500/30"
                       >
-                         <MessageSquare className="w-3 h-3" /> Reply with AI
+                         <Sparkles className="w-3 h-3 text-indigo-400" /> Reply with AI
                       </button>
                     )}
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         )) : (
-          <div className="text-center py-20 bg-slate-900/20 rounded-3xl border border-slate-800 border-dashed">
+          <div className="text-center py-20 bg-[#111114] rounded-3xl border border-slate-800 border-dashed">
             <MessageSquare className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-            <p className="text-slate-500">No reviews found for this profile.</p>
+            <h3 className="text-lg font-bold text-slate-400 mb-1">No reviews found</h3>
+            <p className="text-slate-600 text-sm">{filter !== 'all' ? `No ${filter} reviews yet.` : 'No reviews for this profile.'}</p>
           </div>
         )}
       </div>
