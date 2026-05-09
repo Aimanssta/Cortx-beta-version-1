@@ -33,32 +33,39 @@ export class GoogleBusinessService {
     return ((import.meta as any).env?.VITE_GOOGLE_API_KEY as string) || '';
   }
 
-  static setToken(token: string) {
-    localStorage.setItem(this.STORAGE_KEY, token);
+  static setToken(token: string | null) {
+    if (token) {
+      localStorage.setItem(this.STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(this.STORAGE_KEY);
+    }
   }
 
   static getToken(): string | null {
-    return localStorage.getItem(this.STORAGE_KEY);
+    const token = localStorage.getItem(this.STORAGE_KEY);
+    if (!token || token === 'null' || token === 'undefined') return null;
+    return token;
   }
 
   static async fetchAccounts(): Promise<GoogleAccount[]> {
     const token = this.getToken();
     if (!token) throw new Error('No access token found. Please sign in with Google.');
 
-    const apiKey = this.getApiKey();
-    const url = `https://mybusinessaccountmanagement.googleapis.com/v1/accounts${apiKey ? `?key=${apiKey}` : ''}`;
+    const url = 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts';
 
     console.log('Fetching GBP accounts from:', url);
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
       const error = await response.json();
       console.error('GBP Accounts Error:', error);
-      throw new Error(error.error?.message || `Failed to fetch accounts (${response.status})`);
+      const msg = error.error?.message || `Failed to fetch accounts (${response.status})`;
+      throw new Error(`Google Business Profile API error: ${msg}. Make sure both "My Business Account Management API" and "My Business Business Information API" are enabled in your Google Cloud Project.`);
     }
 
     const data = await response.json();
@@ -70,21 +77,21 @@ export class GoogleBusinessService {
     const token = this.getToken();
     if (!token) throw new Error('No access token found');
 
-    const apiKey = this.getApiKey();
     // Use the Business Information API to get locations
-    const url = `https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title,storeCode,regularHours,websiteUri,metadata,labels${apiKey ? `&key=${apiKey}` : ''}`;
+    const url = `https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title,storeCode,regularHours,websiteUri,metadata,labels`;
 
     console.log(`Fetching locations for ${accountName} from: ${url}`);
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
       const error = await response.json();
       console.error(`GBP Locations Error for ${accountName}:`, error);
-      // Don't throw here if one account fails, just return empty and log
+      // We don't throw here to avoid failing the whole sync if one account has issues
       return [];
     }
 

@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY) || '' });
 
 const SYSTEM_PROMPT = `You are a world-class Google Business Profile (GBP) and local SEO expert at CORTX GBP. 
 Your goal is to help businesses dominate their local market through intelligent automation and strategic insights.

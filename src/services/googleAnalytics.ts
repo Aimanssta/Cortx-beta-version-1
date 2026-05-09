@@ -16,7 +16,9 @@ export class GoogleAnalyticsService {
   private static STORAGE_KEY = 'gmb_access_token';
 
   static getToken(): string | null {
-    return localStorage.getItem(this.STORAGE_KEY);
+    const token = localStorage.getItem(this.STORAGE_KEY);
+    if (!token || token === 'null' || token === 'undefined') return null;
+    return token;
   }
 
   // GA4 Data API (Google Analytics 4)
