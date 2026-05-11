@@ -107,7 +107,7 @@ export default function App() {
 
     const subscribed = params.get('subscribed');
     if (subscribed === 'true') {
-      setIsSubscribed(true);
+      // isSubscribed will be handled by the Firestore listener
       alert("Welcome to CORTX Premium! Your subscription is active.");
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -117,8 +117,30 @@ export default function App() {
     }
   }, []);
 
-  const handleUpgrade = () => {
-    window.location.href = 'https://buy.stripe.com/fZu4grdP39fu0Ls8EifnO00';
+  const handleUpgrade = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Failed to create checkout session: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Upgrade error:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   const [loginLoading, setLoginLoading] = useState(false);
@@ -258,6 +280,26 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Listen for user subscription status in Firestore
+  useEffect(() => {
+    if (!user) {
+      setIsSubscribed(false);
+      return;
+    }
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        setIsSubscribed(!!userData.isSubscribed);
+      } else {
+        setIsSubscribed(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   // Fetch profiles for the user
   useEffect(() => {
@@ -1333,20 +1375,31 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
       {/* Footer with Legal Links */}
       <footer className="absolute bottom-8 left-0 w-full z-10 px-8 text-center sm:text-left">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-600">
-          <p>© 2024 CORTX GBP. All rights reserved.</p>
+          <a
+            href="https://gbp.cortxai.us"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-slate-300 transition-colors"
+          >
+            © 2026 CORTX GBP. All rights reserved.
+          </a>
           <div className="flex gap-6">
-            <button 
-              onClick={() => onNavigate('privacy')}
-              className="hover:text-slate-300 transition-colors cursor-pointer"
+            <a
+              href="https://gbp.cortxai.us/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
             >
               Privacy Policy
-            </button>
-            <button 
-              onClick={() => onNavigate('terms')}
-              className="hover:text-slate-300 transition-colors cursor-pointer"
+            </a>
+            <a
+              href="https://gbp.cortxai.us/terms-of-service"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
             >
               Terms of Service
-            </button>
+            </a>
           </div>
         </div>
       </footer>

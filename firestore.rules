@@ -24,6 +24,12 @@ service cloud.firestore {
       allow read: if isSignedIn();
     }
 
+    // Users (Subscription state)
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false; // Only server (webhook) should write here
+    }
+
     // Profiles
     match /profiles/{profileId} {
       function isValidProfile(data) {
