@@ -1385,17 +1385,13 @@ function LandingPage({ onLogin, isLoading, onNavigate }: { onLogin: () => void, 
           </a>
           <div className="flex gap-6">
             <a
-              href="https://gbp.cortxai.us/privacy-policy"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/?page=privacy"
               className="hover:text-slate-300 transition-colors"
             >
               Privacy Policy
             </a>
             <a
-              href="https://gbp.cortxai.us/terms-of-service"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/?page=terms"
               className="hover:text-slate-300 transition-colors"
             >
               Terms of Service
