@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const secret = process.env.STRIPE_SECRET_KEY;
+    const secret = process.env.STRIPE_SECRET_KEY?.trim();
     if (!secret) {
       return res.status(400).json({ error: "Stripe configuration is missing." });
     }
