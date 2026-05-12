@@ -45,7 +45,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ id: session.id, url: session.url });
   } catch (error: any) {
-    console.error('Stripe error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Stripe error details:', {
+      message: error.message,
+      stack: error.stack,
+      envSet: !!process.env.STRIPE_SECRET_KEY
+    });
+    return res.status(500).json({ 
+      error: error.message,
+      details: "Check Vercel logs for full stack trace."
+    });
   }
 }
